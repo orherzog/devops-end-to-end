@@ -1,5 +1,6 @@
 terraform {
-  source = "github.com/orherzog/tf-modules//compute/eks?ref=main"
+  source = "${get_parent_terragrunt_dir()}/../wrappers/eks///"
+  # source = "github.com/orherzog/tf-modules//compute/eks?ref=main"
 }
 
 include {

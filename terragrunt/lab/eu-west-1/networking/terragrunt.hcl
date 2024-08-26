@@ -1,5 +1,6 @@
 terraform {
-  source = "github.com/orherzog/tf-modules//networking/vpc?ref=main"
+  source = "${get_parent_terragrunt_dir()}/../wrappers/vpc///"
+  # source = "github.com/orherzog/tf-modules//networking/vpc?ref=main"
 }
 
 include {
