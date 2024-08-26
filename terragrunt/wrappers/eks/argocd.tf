@@ -1,13 +1,14 @@
 locals {
-  argocd_namespace = "argocd"
-  install_argocd = lookup(var.eks_mng_settings.generic.addons.argocd, "enabled", false)
-  use_local_cluster = lookup(var.eks_mng_settings.generic.addons.argocd, "use_local_cluster", false)
-  use_remote_cluster = lookup(var.eks_mng_settings.generic.addons.argocd, "use_remote_cluster", false)
-  argocd_manange_cluster_name = lookup(var.eks_mng_settings.generic.addons.remote_cluster.argocd_manange_cluster_name , "argocd_manange_cluster_name", "")
-  argocd_manange_cluster_url = lookup(var.eks_mng_settings.generic.addons.remote_cluster.argocd_manange_cluster_url , "argocd_manange_cluster_url", "")
-  argocd_manange_username = lookup(var.eks_mng_settings.generic.addons.remote_cluster.argocd_manange_username , "argocd_manange_username", "")
-  argocd_manange_password = lookup(var.eks_mng_settings.generic.addons.remote_cluster.argocd_manange_password , "argocd_manange_password", "")
-  cluster_name = "eks-${var.env}"
+  argocd_namespace            = "argocd"
+  install_argocd              = lookup(var.eks_mng_settings.generic.addons.argocd, "enabled", false)
+  use_local_cluster           = lookup(var.eks_mng_settings.generic.addons.argocd, "use_local_cluster", false)
+  use_remote_cluster          = lookup(var.eks_mng_settings.generic.addons.argocd, "use_remote_cluster", false)
+  remote_cluster              = lookup(var.eks_mng_settings.generic.addons.argocd, "remote_cluster", {})
+  argocd_manange_cluster_name = lookup(local.remote_cluster, "argocd_manange_cluster_name", "")
+  argocd_manange_cluster_url  = lookup(local.remote_cluster, "argocd_manange_cluster_url", "")
+  argocd_manange_username     = lookup(local.remote_cluster, "argocd_manange_username", "")
+  argocd_manange_password     = lookup(local.remote_cluster, "argocd_manange_password", "")
+  cluster_name                = "eks-${var.env}"
 }
 
 resource "kubernetes_service_account_v1" "ecr_credentials_sync" {
@@ -169,16 +170,18 @@ module "kms" {
   depends_on = [module.eks_blueprints_addons]
 }
 
+# Check if the cluster exists in kubeconfig
 data "external" "kubeconfig_check" {
   count = local.install_argocd && local.use_remote_cluster ? 1 : 0
-  program = ["${path.module}/scripts/check_kubeconfig.sh", local.argocd_manange_cluster_name]
+  program = ["${path.module}/resources/scripts/check_kubeconfig.sh", local.argocd_manange_cluster_name]
 }
 
+# Log in to ArgoCD and add the cluster if the previous check was successful
 data "external" "argocd_login_and_add" {
   count = local.install_argocd && local.use_remote_cluster ? 1 : 0
-  depends_on = [ external.kubeconfig_check ]
+  depends_on = [data.external.kubeconfig_check]
   program = [
-    "${path.module}/scripts/argocd_login_and_add.sh",
+    "${path.module}/resources/scripts/argocd_login_and_add.sh",
     local.argocd_manange_cluster_url,
     local.argocd_manange_username,
     local.argocd_manange_password,
@@ -187,10 +190,12 @@ data "external" "argocd_login_and_add" {
   ]
 }
 
-output "argocd_login_and_add_result" {
-  value = data.external.argocd_login_and_add.result
+# Output for kubeconfig check result
+output "kubeconfig_check_result" {
+  value = local.install_argocd && local.use_remote_cluster ? data.external.kubeconfig_check[0].result : null
 }
 
-output "kubeconfig_check_result" {
-  value = data.external.kubeconfig_check.result
+# Output for argocd login and add result
+output "argocd_login_and_add_result" {
+  value = local.install_argocd && local.use_remote_cluster ? data.external.argocd_login_and_add[0].result : null
 }

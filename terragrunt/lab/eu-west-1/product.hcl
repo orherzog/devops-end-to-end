@@ -28,14 +28,14 @@ inputs = {
       use_ami_id      = true
       addons = {
         argocd = {
-          enabled = false
+          enabled = true
           use_local_cluster = false   # Boolean to determine if ArgoCD should use a local cluster
-          use_remote_cluster = false  # If using a remote cluster, provide the cluster name here
+          use_remote_cluster = true  # If using a remote cluster, provide the cluster name here
           remote_cluster = {
-            argocd_manange_cluster_name = ""
-            argocd_manange_cluster_url = ""
-            argocd_manange_username = ""
-            argocd_manange_password = ""
+            argocd_manange_cluster_name = "eks-leumit-test"
+            argocd_manange_cluster_url = "https://argocd-manage.us-east-1.test.com"
+            argocd_manange_username = "admin"
+            argocd_manange_password = "1234567"
           }
         }
       }
