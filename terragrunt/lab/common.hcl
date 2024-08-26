@@ -3,8 +3,8 @@ inputs = {
 
   # Tags
   common_tags = {
-    environment-name     = "lab",
-    environment-type     = "lab-env",
+    environment-name     = "leumit-test",
+    environment-type     = "lab",
     created-by           = "terraform",
     requested-by         = "orh",
     backup-policy        = "policy-name"
@@ -19,7 +19,7 @@ inputs = {
   ssl_policy = "ELBSecurityPolicy-TLS-1-2-2017-01"
   
   # # Provider Configuration
-  # aws_region              = "eu-west-1"
+  # aws_region              = "eu-central-1"
   # aws_profile             = "commit-prof"
   # common_parameters       = {
 

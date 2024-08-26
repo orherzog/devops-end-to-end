@@ -1,14 +1,14 @@
 inputs = {
-  env        = "devops-end-to-end"
+  env        = "leumit-test"
   env_type   = "lab"
-  aws_region = "eu-west-1"
+  aws_region = "eu-central-1"
 
   # Route 53
   zone_id       = "ergwegwergwergeqwr"
   domain_name   = "XXX.YYY.com"
-  
+
   # Networking
-  cidr   = "192.168.0.0/16"
+  cidr   = "10.0.0.0/16"
   az_number    = 3
 
   # EKS
