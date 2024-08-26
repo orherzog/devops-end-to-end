@@ -13,3 +13,8 @@ variable "az_number" {
     description = "Number of availability zones to use"
     type = number
 }
+
+variable "enable_vpc_endpoint" {
+  type    = bool
+  default = true
+}

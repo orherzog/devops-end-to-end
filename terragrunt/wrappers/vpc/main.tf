@@ -51,3 +51,80 @@ resource "aws_ec2_managed_prefix_list" "client_subnets" {
     description = "Primary"
   }
 }
+
+
+#endpoints
+module "sg-vpc-endpoint" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "5.1.0"
+  count   = var.enable_vpc_endpoint ? 1 : 0
+  name    = "sgr-${var.env}-vpc-endpoints"
+
+  description     = "Security group for VPC endpoints"
+  vpc_id          = module.vpc.vpc_id
+  use_name_prefix = false
+
+  ingress_cidr_blocks     = [var.cidr]
+  ingress_rules           = ["all-all"]
+  egress_cidr_blocks      = ["0.0.0.0/0"]
+  egress_ipv6_cidr_blocks = []
+  egress_rules            = ["all-all"]
+
+  tags = {
+    Name           = "sgr-${var.env}-vpc-endpoints"
+    service        = "networking",
+    module_version = "v0.0.0"
+  }
+}
+
+module "vpc-endpoints" {
+  source             = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+  version            = "5.1.2"
+  count              = var.enable_vpc_endpoint ? 1 : 0
+  vpc_id             = module.vpc.vpc_id
+  security_group_ids = module.sg-vpc-endpoint[*].security_group_id
+  endpoints = {
+    s3 = {
+      service      = "s3"
+      service_type = "Gateway"
+      route_table_ids = flatten([
+        module.vpc.private_route_table_ids, module.vpc.public_route_table_ids, module.vpc.database_route_table_ids
+      ])
+      tags = { Name = "vpce-gateway-${var.env}-s3" }
+    },
+    logs = {
+      service             = "logs"
+      private_dns_enabled = true
+      subnet_ids          = module.vpc.private_subnets
+      tags                = { Name = "vpce-interface-${var.env}-logs" }
+    }
+    ecr-api = {
+      service             = "ecr.api"
+      private_dns_enabled = true
+      subnet_ids          = module.vpc.private_subnets
+      tags                = { Name = "vpce-interface-${var.env}-ecr-api" }
+    },
+    ecr-dkr = {
+      service             = "ecr.dkr"
+      private_dns_enabled = true
+      subnet_ids          = module.vpc.private_subnets
+      tags                = { Name = "vpce-interface-${var.env}-ecr-dkr" }
+    },
+    # elastic-io = {
+    #   service_name        = "com.amazonaws.vpce.il-central-1.vpce-svc-0e42e1e06ed010238"
+    #   private_dns_enabled = false
+    #   subnet_ids          = module.vpc.private_subnets
+    #   tags                = { Name = "vpce-interface-${var.env}-elastic-io" }
+    # },
+    aps-workspaces = {
+      service             = "aps-workspaces"
+      private_dns_enabled = true
+      subnet_ids          = module.vpc.private_subnets
+      tags                = { Name = "vpce-interface-${var.env}-aps-workspaces" }
+    }
+  }
+  tags = {
+    service        = "networking",
+    module_version = "v0.0.0"
+  }
+}
