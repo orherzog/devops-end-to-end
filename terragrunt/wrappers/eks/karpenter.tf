@@ -1,4 +1,5 @@
 resource "kubectl_manifest" "karpenter_default_ec2_node_class" {
+  count     = local.install_karpenter ? 1 : 0
   yaml_body = <<YAML
 apiVersion: karpenter.k8s.aws/v1beta1
 kind: EC2NodeClass
@@ -27,6 +28,7 @@ YAML
 
 # Default NodePool current leumit Spot (FromGithub)
 resource "kubectl_manifest" "karpenter_default_node_pool" {
+  count     = local.install_karpenter ? 1 : 0
   yaml_body = <<YAML
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
@@ -71,41 +73,3 @@ YAML
     kubectl_manifest.karpenter_default_node_pool,
   ]
 }
-
-# resource "kubectl_manifest" "karpenter_default_node_pool" {
-#   yaml_body = <<YAML
-# apiVersion: karpenter.sh/v1beta1
-# kind: NodePool
-# metadata:
-#   name: default 
-# spec:  
-#   template:
-#     metadata:
-#       labels:
-#         intent: apps
-#     spec:
-#       requirements:
-#         - key: kubernetes.io/arch
-#           operator: In
-#           values: ["amd64"]
-#         - key: "karpenter.k8s.aws/instance-cpu"
-#           operator: In
-#           values: ["4", "8", "16", "32"]
-#         - key: karpenter.sh/capacity-type
-#           operator: In
-#           values: [ "on-demand"]
-#         - key: karpenter.k8s.aws/instance-category
-#           operator: In
-#           values: ["c", "m", "r"]
-#       nodeClassRef:
-#         name: default
-#       kubelet:
-#         containerRuntime: containerd
-#         maxPods: 110
-#         limits:
-#           cpu: 1000
-#   disruption:
-#     consolidationPolicy: WhenEmpty
-#     consolidateAfter: 300s
-
-

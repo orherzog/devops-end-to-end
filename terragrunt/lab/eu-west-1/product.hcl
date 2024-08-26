@@ -27,15 +27,18 @@ inputs = {
       iops            = 3000
       use_ami_id      = true
       addons = {
-        argocd = {
+        karpenter = {
           enabled = true
+        }
+        argocd = {
+          enabled = false
           use_local_cluster = false   # Boolean to determine if ArgoCD should use a local cluster
-          use_remote_cluster = true  # If using a remote cluster, provide the cluster name here
+          use_remote_cluster = false  # If using a remote cluster, provide the cluster name here
           remote_cluster = {
-            argocd_manange_cluster_name = "eks-leumit-test"
-            argocd_manange_cluster_url = "https://argocd-manage.us-east-1.test.com"
-            argocd_manange_username = "admin"
-            argocd_manange_password = "1234567"
+            argocd_manange_cluster_name = ""  # The name of the cluster where argocd was installed
+            argocd_manange_cluster_url = "" # The URL of the argocd (Should be accessable by the machine how run the terragrunt)
+            argocd_manange_username = "" # The username of the argocd (Usually 'admin', But also can be SSO user)
+            argocd_manange_password = "" # The password for the username that was specified
           }
         }
       }

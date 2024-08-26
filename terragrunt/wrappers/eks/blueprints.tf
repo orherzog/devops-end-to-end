@@ -65,7 +65,7 @@ module "eks_blueprints_addons" {
   }
 
   ## KARPENTER
-  enable_karpenter = true
+  enable_karpenter = local.install_karpenter ? true : false
   karpenter = {
     repository_username = data.aws_ecrpublic_authorization_token.token.user_name
     repository_password = data.aws_ecrpublic_authorization_token.token.password

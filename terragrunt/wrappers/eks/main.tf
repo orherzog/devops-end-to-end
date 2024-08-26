@@ -1,3 +1,32 @@
+
+locals {
+  install_karpenter = lookup(var.eks_mng_settings.generic.addons.karpenter, "enabled", false)
+  access_entries = {
+    admin_sso_role = {
+      kubernetes_groups = []
+      principal_arn     = local.AWSAdministratorAccess_arn
+
+      policy_associations = {
+        single = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
+
+  karpenter_role_entry = local.install_karpenter ? {
+    karpenter_role = {
+      type          = "EC2_LINUX"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${module.eks_blueprints_addons.karpenter.node_iam_role_name}"
+    }
+  } : {}
+  
+  all_access_entries = merge(local.access_entries, local.karpenter_role_entry)
+}
+
 resource "aws_kms_key" "aws-ebs-csi-driver" {
   description = "KMS for aws ebs csi driver"
 }
@@ -78,71 +107,7 @@ module "eks" {
 
   enable_cluster_creator_admin_permissions = false
 
-  access_entries = {
-    # One access entry with a policy associated
-    admin_sso_role = {
-      kubernetes_groups = []
-      principal_arn     = local.AWSAdministratorAccess_arn
-
-      policy_associations = {
-        single = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
-        }
-      }
-    }
-    # bastion_role = {
-    #   kubernetes_groups = []
-    #   principal_arn     = data.aws_iam_roles.bastion_role.arns
-
-    #   policy_associations = {
-    #     single = {
-    #       policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-    #       access_scope = {
-    #         type       = "cluster"
-    #       }
-    #     }
-    #   }
-    # }
-
-    karpenter_role = {
-      # kubernetes_groups = ["system:nodes", "system:bootstrappers"]
-      # user_name         = "system:node:{{EC2PrivateDNSName}}"
-      type          = "EC2_LINUX"
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${module.eks_blueprints_addons.karpenter.node_iam_role_name}"
-
-      # policy_associations = {
-      #   single = {
-      #     policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-      #     access_scope = {
-      #       type       = "cluster"
-      #     }
-      #   }
-      # }
-    }
-    # ex-multiple = {
-    #   kubernetes_groups = []
-    #   principal_arn     = aws_iam_role.this["multiple"].arn
-
-    #   policy_associations = {
-    #     ex-one = {
-    #       policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy"
-    #       access_scope = {
-    #         namespaces = ["default"]
-    #         type       = "namespace"
-    #       }
-    #     }
-    #     ex-two = {
-    #       policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
-    #       access_scope = {
-    #         type = "cluster"
-    #       }
-    #     }
-    #   }
-    # }
-  }
+  access_entries = local.all_access_entries
 
   node_security_group_additional_rules = {
     egress_all = {
@@ -171,16 +136,8 @@ module "eks" {
       type        = "ingress"
       self        = true
     }
-    # ingress_mng_all = {
-    #   description = "OpenVPN Access"
-    #   protocol    = "tcp"
-    #   from_port   = 0
-    #   to_port     = 0
-    #   type        = "ingress"
-    #   cidr_blocks = [var.shared_service_vpc_cidr]
-    # }
   }
-  node_security_group_tags = { "karpenter.sh/discovery" = "eks-${var.env}" }
+  node_security_group_tags = local.install_karpenter ? { "karpenter.sh/discovery" = "eks-${var.env}" } : {}
   eks_managed_node_group_defaults = {
     use_name_prefix                        = true
     create_launch_template                 = true
@@ -191,18 +148,6 @@ module "eks" {
       AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
     }
     capacity_type = "ON_DEMAND"
-    # See issue https://github.com/awslabs/amazon-eks-ami/issues/844
-    # pre_bootstrap_user_data = <<-EOT
-    #   #!/bin/bash
-    #   set -ex
-    #   cat <<-EOF > /etc/profile.d/bootstrap.sh
-    #   export CONTAINER_RUNTIME="containerd"
-    #   export USE_MAX_PODS=false
-    #   export KUBELET_EXTRA_ARGS="--max-pods=120"
-    #   EOF
-    #   # Source extra environment variables in bootstrap script
-    #   sed -i '/^set -o errexit/a\\nsource /etc/profile.d/bootstrap.sh' /etc/eks/bootstrap.sh
-    # EOT
     pre_bootstrap_user_data = <<-EOT
       #!/bin/bash
       set -ex
