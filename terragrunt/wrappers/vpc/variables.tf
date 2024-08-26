@@ -18,3 +18,4 @@ variable "enable_vpc_endpoint" {
   type    = bool
   default = true
 }
+variable "common_tags" { type = map(string) }
