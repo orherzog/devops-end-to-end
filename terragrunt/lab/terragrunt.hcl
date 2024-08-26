@@ -38,12 +38,6 @@ variable "common_parameters" {
   type        = map(string)
   default     = {}
 }
-
-variable "common_tags" {
-  description = "Map of common tags shared across all infrastructure resources (eg, domain names)"
-  type        = map(string)
-  default     = {}
-}
 EOF
 }
 
