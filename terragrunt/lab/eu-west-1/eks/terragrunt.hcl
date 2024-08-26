@@ -21,7 +21,7 @@ inputs = merge(
   local.product_vars,
   {
     vpc_id                = dependency.networking.outputs.vpc_id
-    subnet_id             = dependency.networking.outputs.private_subnets
+    subnet_ids            = dependency.networking.outputs.private_subnets
     client_prefix_list    = dependency.networking.outputs.client_prefix_list
   }
 )
