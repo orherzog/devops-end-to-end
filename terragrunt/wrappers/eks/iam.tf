@@ -29,14 +29,17 @@ module "ebs_csi_irsa_role" {
   }
 }
 
+
 module "argocd_irsa_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "5.30.0"
 
+  count = local.install_argocd && local.use_local_cluster ? 1 : 0
+
   role_name = "role-${var.env}-argocd-irsa"
 
   role_policy_arns = {
-    policy = module.argocd_ecr_policy.arn
+    policy = module.argocd_ecr_policy[0].arn
   }
 
   oidc_providers = {
@@ -52,6 +55,8 @@ module "argocd_irsa_role" {
 
 module "argocd_ecr_policy" {
   source = "terraform-aws-modules/iam/aws//modules/iam-policy"
+
+  count = local.install_argocd && local.use_local_cluster ? 1 : 0
 
   name        = "policy-${var.env}-argocd-ecr-permission"
   path        = "/"

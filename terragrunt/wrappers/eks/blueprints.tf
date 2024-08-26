@@ -93,8 +93,8 @@ module "eks_blueprints_addons" {
         common_tags             = data.aws_default_tags.this.tags
         ssl_policy              = var.ssl_policy
         argocd_host             = "argocd.local" #${local.system_dns_zone}"
-        argocd_password         = local.install_argocd ? random_password.argocd_admin_password[0].result : ""
-        argocd_repo_server_irsa = module.argocd_irsa_role.iam_role_arn
+        argocd_password         = local.install_argocd && local.use_local_cluster ? random_password.argocd_admin_password[0].result : ""
+        argocd_repo_server_irsa = local.install_argocd && local.use_local_cluster ? element(module.argocd_irsa_role[*].iam_role_arn, 0) : ""        
       })
     ]
   }

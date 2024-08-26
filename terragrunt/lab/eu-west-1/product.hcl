@@ -28,9 +28,15 @@ inputs = {
       use_ami_id      = true
       addons = {
         argocd = {
-          enabled = true
-          use_local_cluster = true   # Boolean to determine if ArgoCD should use a local cluster
-          remote_cluster_name = ""   # If using a remote cluster, provide the cluster name here
+          enabled = false
+          use_local_cluster = false   # Boolean to determine if ArgoCD should use a local cluster
+          use_remote_cluster = false  # If using a remote cluster, provide the cluster name here
+          remote_cluster = {
+            argocd_manange_cluster_name = ""
+            argocd_manange_cluster_url = ""
+            argocd_manange_username = ""
+            argocd_manange_password = ""
+          }
         }
       }
     }

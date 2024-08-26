@@ -1,8 +1,13 @@
 locals {
   argocd_namespace = "argocd"
   install_argocd = lookup(var.eks_mng_settings.generic.addons.argocd, "enabled", false)
-  use_local_cluster = lookup(var.eks_mng_settings.generic.addons.argocd, "use_local_cluster", true)
-  remote_cluster_name = lookup(var.eks_mng_settings.generic.addons.argocd, "remote_cluster_name", "")
+  use_local_cluster = lookup(var.eks_mng_settings.generic.addons.argocd, "use_local_cluster", false)
+  use_remote_cluster = lookup(var.eks_mng_settings.generic.addons.argocd, "use_remote_cluster", false)
+  argocd_manange_cluster_name = lookup(var.eks_mng_settings.generic.addons.remote_cluster.argocd_manange_cluster_name , "argocd_manange_cluster_name", "")
+  argocd_manange_cluster_url = lookup(var.eks_mng_settings.generic.addons.remote_cluster.argocd_manange_cluster_url , "argocd_manange_cluster_url", "")
+  argocd_manange_username = lookup(var.eks_mng_settings.generic.addons.remote_cluster.argocd_manange_username , "argocd_manange_username", "")
+  argocd_manange_password = lookup(var.eks_mng_settings.generic.addons.remote_cluster.argocd_manange_password , "argocd_manange_password", "")
+  cluster_name = "eks-${var.env}"
 }
 
 resource "kubernetes_service_account_v1" "ecr_credentials_sync" {
@@ -12,7 +17,7 @@ resource "kubernetes_service_account_v1" "ecr_credentials_sync" {
     namespace = local.argocd_namespace
 
     annotations = {
-      "eks.amazonaws.com/role-arn" = module.argocd_irsa_role.iam_role_arn
+      "eks.amazonaws.com/role-arn" = module.argocd_irsa_role[0].iam_role_arn
     }
   }
   depends_on = [module.eks_blueprints_addons]
@@ -151,15 +156,41 @@ module "kms" {
   # Policy
   key_administrators = [
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/role-comm-it-trust",
-    one(data.aws_iam_roles.AWSAdministratorAccess.arns),
+    element(data.aws_iam_roles.AWSAdministratorAccess.arns, 0),
   ]
   key_users = [
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/role-comm-it-trust",
-    one(data.aws_iam_roles.AWSAdministratorAccess.arns),
-    module.argocd_irsa_role.iam_role_arn,
+    element(data.aws_iam_roles.AWSAdministratorAccess.arns, 0),
+    module.argocd_irsa_role[0].iam_role_arn,
   ]
 
   # Aliases
   aliases    = ["${var.env}/argocd/sops"]
   depends_on = [module.eks_blueprints_addons]
+}
+
+data "external" "kubeconfig_check" {
+  count = local.install_argocd && local.use_remote_cluster ? 1 : 0
+  program = ["${path.module}/scripts/check_kubeconfig.sh", local.argocd_manange_cluster_name]
+}
+
+data "external" "argocd_login_and_add" {
+  count = local.install_argocd && local.use_remote_cluster ? 1 : 0
+  depends_on = [ external.kubeconfig_check ]
+  program = [
+    "${path.module}/scripts/argocd_login_and_add.sh",
+    local.argocd_manange_cluster_url,
+    local.argocd_manange_username,
+    local.argocd_manange_password,
+    module.eks.cluster_arn,
+    local.cluster_name
+  ]
+}
+
+output "argocd_login_and_add_result" {
+  value = data.external.argocd_login_and_add.result
+}
+
+output "kubeconfig_check_result" {
+  value = data.external.kubeconfig_check.result
 }
