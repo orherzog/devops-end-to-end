@@ -9,10 +9,20 @@ inputs = {
     requested-by         = "orh",
     backup-policy        = "policy-name"
   }
-  
-  # Provider Configuration
-  aws_region              = "eu-west-1"
-  common_parameters       = {
 
-  }
+  # # Networking
+  # tgw_id                  = "tgw-0a1f337f47651fac0"
+  # tgw_rtb_association_id  = "tgw-rtb-0c8fbd587743f0452"
+  # tgw_rtb_propogation_ids = ["tgw-rtb-07cae0c7a7e73b288"]
+
+  shared_services_account_id = "581349712378"
+  ssl_policy = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  
+  # # Provider Configuration
+  # aws_region              = "eu-west-1"
+  # aws_profile             = "commit-prof"
+  # common_parameters       = {
+
+  # }
+
 }
