@@ -1,7 +1,7 @@
 inputs = {
   env        = "leumit-test"
   env_type   = "lab"
-  aws_region = "eu-central-1"
+  aws_region = "us-west-2"
 
   # Route 53
   zone_id       = "ergwegwergwergeqwr"

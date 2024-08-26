@@ -15,8 +15,8 @@ provider "aws" {
 }
 
 provider "aws" {
-  alias  = "eu-central-1"
-  region = "eu-central-1"
+  alias  = "us-west-2"
+  region = "us-west-2"
 
   default_tags {
     tags = var.common_tags
@@ -54,7 +54,7 @@ remote_state {
 
   config = {
     encrypt        = true
-    region         = "eu-central-1"
+    region         = "us-west-2"
     key            = format("lab/%s/terraform.tfstate", path_relative_to_include())
     bucket         = format("terraform-state-%s", get_aws_account_id())
     dynamodb_table = format("terraform-state-%s", get_aws_account_id())
