@@ -1,14 +1,14 @@
 inputs = {
   env        = "leumit-test"
   env_type   = "lab"
-  aws_region = "us-west-2"
+  aws_region = "eu-west-1"
 
   # Route 53
   zone_id       = "ergwegwergwergeqwr"
   domain_name   = "XXX.YYY.com"
 
   # Networking
-  cidr   = "10.0.0.0/16"
+  cidr   = "172.20.0.0/16"
   az_number    = 3
 
   # EKS
@@ -26,6 +26,13 @@ inputs = {
       volume_size     = 50
       iops            = 3000
       use_ami_id      = true
+      addons = {
+        argocd = {
+          enabled = true
+          use_local_cluster = true   # Boolean to determine if ArgoCD should use a local cluster
+          remote_cluster_name = ""   # If using a remote cluster, provide the cluster name here
+        }
+      }
     }
-  }     
-}
+  }
+}     

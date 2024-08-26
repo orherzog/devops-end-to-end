@@ -1,5 +1,5 @@
 data "aws_ecrpublic_authorization_token" "token" {
-  provider = aws.us-west-2
+  provider = aws.us-east-1
 }
 
 module "eks_blueprints_addons" {
@@ -83,7 +83,7 @@ module "eks_blueprints_addons" {
   enable_external_secrets = false
 
   ## ArgoCD
-  enable_argocd = true
+  enable_argocd = local.install_argocd && local.use_local_cluster ? true : false
   argocd = {
     name          = "argocd"
     namespace     = local.argocd_namespace
@@ -93,7 +93,7 @@ module "eks_blueprints_addons" {
         common_tags             = data.aws_default_tags.this.tags
         ssl_policy              = var.ssl_policy
         argocd_host             = "argocd.local" #${local.system_dns_zone}"
-        argocd_password         = random_password.argocd_admin_password.bcrypt_hash
+        argocd_password         = local.install_argocd ? random_password.argocd_admin_password[0].result : ""
         argocd_repo_server_irsa = module.argocd_irsa_role.iam_role_arn
       })
     ]
@@ -111,17 +111,16 @@ module "eks_blueprints_addons" {
 }
 
 resource "random_password" "argocd_admin_password" {
+  count  = local.install_argocd && local.use_local_cluster ? 1 : 0
   length = 32
 }
+
 module "parameter_store_secrets" {
+  count  = local.install_argocd && local.use_local_cluster ? 1 : 0
   source = "terraform-aws-modules/ssm-parameter/aws"
 
-  for_each = {
-    "argocd_admin_password" : random_password.argocd_admin_password.result
-  }
-
-  name        = each.key
-  value       = each.value
+  name        = "argocd_admin_password"
+  value       = random_password.argocd_admin_password[0].result
   secure_type = true
 }
 

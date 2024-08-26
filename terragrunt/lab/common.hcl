@@ -19,7 +19,7 @@ inputs = {
   ssl_policy = "ELBSecurityPolicy-TLS-1-2-2017-01"
   
   # # Provider Configuration
-  # aws_region              = "eu-central-1"
+  # aws_region              = "eu-west-1"
   # aws_profile             = "commit-prof"
   # common_parameters       = {
 

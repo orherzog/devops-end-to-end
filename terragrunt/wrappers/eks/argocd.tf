@@ -1,8 +1,12 @@
 locals {
   argocd_namespace = "argocd"
+  install_argocd = lookup(var.eks_mng_settings.generic.addons.argocd, "enabled", false)
+  use_local_cluster = lookup(var.eks_mng_settings.generic.addons.argocd, "use_local_cluster", true)
+  remote_cluster_name = lookup(var.eks_mng_settings.generic.addons.argocd, "remote_cluster_name", "")
 }
 
 resource "kubernetes_service_account_v1" "ecr_credentials_sync" {
+  count = local.install_argocd && local.use_local_cluster ? 1 : 0
   metadata {
     name      = "ecr-credentials-sync"
     namespace = local.argocd_namespace
@@ -15,6 +19,7 @@ resource "kubernetes_service_account_v1" "ecr_credentials_sync" {
 }
 
 resource "kubernetes_role_v1" "ecr_credentials_sync" {
+  count = local.install_argocd && local.use_local_cluster ? 1 : 0
   metadata {
     name      = "ecr-credentials-sync"
     namespace = local.argocd_namespace
@@ -29,6 +34,7 @@ resource "kubernetes_role_v1" "ecr_credentials_sync" {
 }
 
 resource "kubernetes_role_binding_v1" "ecr_credentials_sync" {
+  count = local.install_argocd && local.use_local_cluster ? 1 : 0
   metadata {
     name      = "ecr-credentials-sync"
     namespace = local.argocd_namespace
@@ -36,20 +42,20 @@ resource "kubernetes_role_binding_v1" "ecr_credentials_sync" {
 
   role_ref {
     kind      = "Role"
-    name      = kubernetes_role_v1.ecr_credentials_sync.metadata[0].name
+    name      = kubernetes_role_v1.ecr_credentials_sync[0].metadata[0].name
     api_group = "rbac.authorization.k8s.io"
   }
 
   subject {
     kind      = "ServiceAccount"
-    name      = kubernetes_service_account_v1.ecr_credentials_sync.metadata[0].name
+    name      = kubernetes_service_account_v1.ecr_credentials_sync[0].metadata[0].name
     namespace = local.argocd_namespace
   }
   depends_on = [module.eks_blueprints_addons]
 }
 
-
 resource "kubernetes_cron_job_v1" "ecr_credentials_sync" {
+  count = local.install_argocd && local.use_local_cluster ? 1 : 0
   metadata {
     name      = "ecr-credentials-sync"
     namespace = local.argocd_namespace
@@ -133,10 +139,11 @@ resource "kubernetes_cron_job_v1" "ecr_credentials_sync" {
   depends_on = [module.eks_blueprints_addons]
 }
 
-
 module "kms" {
   source  = "terraform-aws-modules/kms/aws"
   version = "2.0.1"
+  
+  count = local.install_argocd && local.use_local_cluster ? 1 : 0
 
   description = "ArgoCD helm-secrets SOPS key"
   key_usage   = "ENCRYPT_DECRYPT"
