@@ -8,8 +8,9 @@ inputs = {
   domain_name   = "XXX.YYY.com"
 
   # Networking
-  cidr   = "172.20.0.0/16"
-  az_number    = 3
+  cidr          = "172.20.0.0/16"
+  az_number     = 3
+  create_public_subnet = false 
 
   # EKS
   eks_mng_settings = {

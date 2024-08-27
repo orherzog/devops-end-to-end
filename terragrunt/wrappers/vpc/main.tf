@@ -11,16 +11,15 @@ module "vpc" {
 
   azs = slice(data.aws_availability_zones.available.names, 0, var.az_number)
 
-  public_subnets   = local.public_subnet_cidrs
   private_subnets  = local.private_subnet_cidrs
   database_subnets = local.database_subnet_cidrs
-
+  public_subnets   = local.create_public_subnet ? local.public_subnet_cidrs : []
 
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  enable_nat_gateway = true
-  single_nat_gateway = true
+  enable_nat_gateway = local.create_public_subnet 
+  single_nat_gateway = local.create_public_subnet 
 
   # VPC Flow Logs (Cloudwatch log group and IAM role will be created)
   vpc_flow_log_iam_role_name            = "vpc-flow-log-role-${var.env}"
@@ -52,8 +51,7 @@ resource "aws_ec2_managed_prefix_list" "client_subnets" {
   }
 }
 
-
-#endpoints
+# Endpoints Security Group
 module "sg-vpc-endpoint" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "5.1.0"
@@ -72,11 +70,12 @@ module "sg-vpc-endpoint" {
 
   tags = {
     Name           = "sgr-${var.env}-vpc-endpoints"
-    service        = "networking",
+    service        = "networking"
     module_version = "v0.0.0"
   }
 }
 
+# VPC Endpoints
 module "vpc-endpoints" {
   source             = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
   version            = "5.1.2"
@@ -97,7 +96,7 @@ module "vpc-endpoints" {
       private_dns_enabled = true
       subnet_ids          = module.vpc.private_subnets
       tags                = { Name = "vpce-interface-${var.env}-logs" }
-    }
+    },
     ecr-api = {
       service             = "ecr.api"
       private_dns_enabled = true
@@ -110,12 +109,6 @@ module "vpc-endpoints" {
       subnet_ids          = module.vpc.private_subnets
       tags                = { Name = "vpce-interface-${var.env}-ecr-dkr" }
     },
-    # elastic-io = {
-    #   service_name        = "com.amazonaws.vpce.il-central-1.vpce-svc-0e42e1e06ed010238"
-    #   private_dns_enabled = false
-    #   subnet_ids          = module.vpc.private_subnets
-    #   tags                = { Name = "vpce-interface-${var.env}-elastic-io" }
-    # },
     aps-workspaces = {
       service             = "aps-workspaces"
       private_dns_enabled = true
@@ -124,7 +117,7 @@ module "vpc-endpoints" {
     }
   }
   tags = {
-    service        = "networking",
+    service        = "networking"
     module_version = "v0.0.0"
   }
 }

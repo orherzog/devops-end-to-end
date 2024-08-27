@@ -19,3 +19,8 @@ variable "enable_vpc_endpoint" {
   default = true
 }
 variable "common_tags" { type = map(string) }
+variable "create_public_subnet" {
+  description = "Whether to create public subnets or not"
+  type        = bool
+  default     = true
+}
